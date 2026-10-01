@@ -3,6 +3,9 @@ import java.util.List;
 
 public class RelationalAlgebra {
 
+    private static long joinComparisonCount = 0;
+    private static long selectExaminationCount = 0;
+
     public static Relation rename(Relation relation, String newName) {
 
         Relation result = new Relation(
@@ -19,6 +22,15 @@ public class RelationalAlgebra {
 
     public static Relation project(Relation relation, List<String> attributes) {
 
+        for (int i = 0; i < attributes.size(); i++) {
+            for (int j = i + 1; j < attributes.size(); j++) {
+                if (attributes.get(i).equals(attributes.get(j))) {
+                    throw new IllegalArgumentException(
+                            "Schema error: duplicate projection attribute '"
+                                    + attributes.get(i) + "'");
+                }
+            }
+        }
         Relation result = new Relation(
                 relation.getName(),
                 attributes
@@ -144,6 +156,9 @@ public class RelationalAlgebra {
         );
 
         for (Tuple tuple : relation.getTuples()) {
+
+            selectExaminationCount++;
+
             if (evaluateCondition(condition, relation, tuple)) {
                 result.addTuple(tuple);
             }
@@ -151,6 +166,7 @@ public class RelationalAlgebra {
 
         return result;
     }
+
 
     private static boolean evaluateCondition(
             ConditionNode condition,
@@ -277,9 +293,63 @@ public class RelationalAlgebra {
             Relation right,
             ConditionNode condition) {
 
-        Relation product = times(left, right);
+        List<String> newAttributes = new ArrayList<>();
 
-        return select(product, condition);
+        for (String attribute : left.getAttributes()) {
+            newAttributes.add(left.getName() + "." + attribute);
+        }
+
+        for (String attribute : right.getAttributes()) {
+            newAttributes.add(right.getName() + "." + attribute);
+        }
+
+        Relation result = new Relation(
+                left.getName() + "_join_" + right.getName(),
+                newAttributes
+        );
+
+        Relation combinedRelation = new Relation(
+                left.getName() + "_times_" + right.getName(),
+                newAttributes
+        );
+
+        for (Tuple leftTuple : left.getTuples()) {
+
+            for (Tuple rightTuple : right.getTuples()) {
+
+                joinComparisonCount++;
+
+                List<Value> combinedValues = new ArrayList<>();
+                combinedValues.addAll(leftTuple.getValues());
+                combinedValues.addAll(rightTuple.getValues());
+
+                Tuple combinedTuple = new Tuple(combinedValues);
+
+                if (evaluateCondition(
+                        condition,
+                        combinedRelation,
+                        combinedTuple)) {
+
+                    result.addTuple(combinedTuple);
+                }
+            }
+        }
+
+        return result;
     }
+
+
+            public static void resetCounters() {
+                joinComparisonCount = 0;
+                selectExaminationCount = 0;
+            }
+
+            public static long getJoinComparisonCount() {
+                return joinComparisonCount;
+            }
+
+            public static long getSelectExaminationCount() {
+                return selectExaminationCount;
+            }
 
 }

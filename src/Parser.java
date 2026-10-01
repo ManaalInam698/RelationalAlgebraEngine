@@ -289,7 +289,8 @@ public class Parser {
 
             if (position >= tokens.size()) {
                 throw new IllegalArgumentException(
-                        "Expected '" + value + "' at end of input");
+                        "Expected '" + value + "' at position "
+                                + getEndPosition());
             }
 
             throw new IllegalArgumentException(
