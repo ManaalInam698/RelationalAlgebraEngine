@@ -330,4 +330,18 @@ public class SemanticsTest {
         assertTrue(output.contains("Age"));
         assertEquals("R [Age]\n", output);
     }
+
+    @Test
+    public void testExtraRename() {
+
+        Database database = new Database();
+
+        Relation r = new Relation("R", Arrays.asList("Name"));
+
+        database.addRelation(r);
+
+        Relation result = evaluate(database, "rename[S](R)");
+
+        assertEquals("S", result.getName());
+    }
 }
